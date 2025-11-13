@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>VR Heart Rate Sync</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: sans-serif; text-align: center; margin-top: 10vh; }
+    button { font-size: 1.5em; padding: 0.5em 1em; border-radius: 12px; }
+    h1 { color: #d33; font-size: 2.5em; }
+  </style>
+</head>
+<body>
+  <h1>💓 Heart Rate Sync in VR</h1>
+  <button id="connect">Connect COOSPO</button>
+  <div id="bpm" style="font-size: 4em; margin-top: 30px;">--</div>
+
+  <script>
+    async function connectHeartRate() {
+      try {
+        const device = await navigator.bluetooth.requestDevice({
+          filters: [{ services: ['heart_rate'] }]
+        });
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService('heart_rate');
+        const char = await service.getCharacteristic('heart_rate_measurement');
+        await char.startNotifications();
+        char.addEventListener('characteristicvaluechanged', e => {
+          const val = e.target.value;
+          const bpm = val.getUint8(1);
+          document.getElementById('bpm').textContent = bpm + ' bpm';
+          // ✅ 这里你可以实时把数据传到 WebXR
+          if (window.updateScene) updateScene(bpm);
+        });
+        console.log("Connected to COOSPO!");
+      } catch (err) {
+        alert("Connection failed: " + err);
+      }
+    }
+
+    document.getElementById('connect').addEventListener('click', connectHeartRate);
+  </script>
+</body>
+</html>
